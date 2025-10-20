@@ -1,5 +1,5 @@
 {
-  "name": "@amzn/address-form-sdk-js",
+  "name": "@aws/address-form-sdk-js",
   "description": "Address Form SDK for Javascript",
   "version": "1.0.0",
   "main": "./dist/lib/address-form-sdk.cjs.js",
