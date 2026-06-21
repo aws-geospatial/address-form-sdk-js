@@ -1,7 +1,7 @@
 {
   "name": "@aws/address-form-sdk-js",
   "description": "Address Form SDK for Javascript",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "main": "./dist/lib/address-form-sdk.cjs.js",
   "types": "dist/lib/main.d.ts",
   "files": [
@@ -81,6 +81,9 @@
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "eslintConfig": {
     "extends": [
