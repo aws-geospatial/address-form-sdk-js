@@ -10,7 +10,7 @@ vi.mock("../../utils/api", () => ({
 
 const client = new GeoPlacesClient();
 
-export function renderWithProvider(ui: ReactNode, options?: Omit<RenderOptions, "wrapper">) {
+export const renderWithProvider = (ui: ReactNode, options?: Omit<RenderOptions, "wrapper">) => {
   return render(ui, {
     wrapper: ({ children }) => (
       <AmazonLocationProvider apiKey="test-api-key" region="us-east-1" client={client}>
@@ -19,4 +19,15 @@ export function renderWithProvider(ui: ReactNode, options?: Omit<RenderOptions, 
     ),
     ...options,
   });
-}
+};
+
+export const renderWithoutApiKey = (ui: ReactNode, options?: Omit<RenderOptions, "wrapper">) => {
+  return render(ui, {
+    wrapper: ({ children }) => (
+      <AmazonLocationProvider region="us-west-2" client={client}>
+        {children}
+      </AmazonLocationProvider>
+    ),
+    ...options,
+  });
+};

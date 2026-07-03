@@ -10,7 +10,7 @@ export interface MapViewState {
 }
 
 export interface AddressFormContextType {
-  apiKey: string;
+  apiKey?: string;
   region: string;
   data: AddressFormData;
   setData: (data: AddressFormData) => void;

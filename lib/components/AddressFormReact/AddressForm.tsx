@@ -1,4 +1,9 @@
-import { Address, AutocompleteFilterPlaceType, type GetPlaceIntendedUse } from "@aws-sdk/client-geo-places";
+import {
+  Address,
+  AutocompleteFilterPlaceType,
+  GeoPlacesClient,
+  type GetPlaceIntendedUse,
+} from "@aws-sdk/client-geo-places";
 import clsx from "clsx";
 import { ComponentProps, FormEventHandler, FunctionComponent, ReactNode, useEffect, useRef, useState } from "react";
 import { AddressFormAddressField, AddressFormAddressFieldProps } from "./AddressFormAddressField";
@@ -28,8 +33,19 @@ export interface AddressFormData {
 }
 
 export interface AddressFormProps extends AddressFormContentProps {
-  apiKey: string;
+  /**
+   * Amazon Location Service API key. Required unless a pre-configured `client` is provided.
+   * When omitted and rendering `<AddressForm.Map>`, a `geo://` protocol style URL is used
+   * and the consumer must supply a `transformRequest` prop to sign map tile requests.
+   */
+  apiKey?: string;
   region: string;
+  /**
+   * Optional pre-configured `GeoPlacesClient`. Provide this to authenticate Places API
+   * calls (Autocomplete, Suggest, GetPlace, ReverseGeocode) with AWS credentials instead of
+   * an API key. When supplied, `apiKey` becomes optional for those calls.
+   */
+  client?: GeoPlacesClient;
   language?: string;
   politicalView?: string;
   showCurrentCountryResultsOnly?: boolean;
@@ -49,6 +65,7 @@ interface ChildComponents {
 export const AddressForm: FunctionComponent<AddressFormProps> & ChildComponents = ({
   apiKey,
   region,
+  client,
   children,
   language,
   politicalView,
@@ -63,6 +80,7 @@ export const AddressForm: FunctionComponent<AddressFormProps> & ChildComponents 
     <AddressFormProvider
       apiKey={apiKey}
       region={region}
+      client={client}
       language={language}
       politicalView={politicalView}
       showCurrentCountryResultsOnly={showCurrentCountryResultsOnly}

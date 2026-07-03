@@ -7,7 +7,7 @@ import { AmazonLocationProvider } from "../AmazonLocationProvider";
 import { countries } from "../../data/countries";
 
 export interface AddressFormProps extends PropsWithChildren {
-  apiKey: string;
+  apiKey?: string;
   region: string;
   language?: string;
   politicalView?: string;

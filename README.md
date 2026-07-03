@@ -8,9 +8,12 @@ The Address Form SDK can be used within a React app or in a standalone HTML and 
 
 ### Prerequisites
 
-First you will need to have an Amazon Location Service API key containing the correct permissions to perform actions for the address form. Follow [this guide for how to create an API key](https://docs.aws.amazon.com/location/latest/developerguide/using-apikeys.html).
+You will need credentials with permission to call the actions listed below. The Address Form supports two authentication modes:
 
-The use of the Address Form will require the following actions to be allowed in the API key:
+- **API key** — the simplest option for browser-only apps. Follow [this guide for how to create an API key](https://docs.aws.amazon.com/location/latest/developerguide/using-apikeys.html).
+- **Pre-configured AWS SDK client** — pass a `@aws-sdk/client-geo-places` client that you have already configured with AWS credentials (e.g. Cognito Identity, IAM, or a custom credential provider). See [Authenticating with an AWS SDK client](#authenticating-with-an-aws-sdk-client).
+
+The use of the Address Form will require the following actions to be allowed by your API key or AWS credentials:
 
 | Action           | Purpose                                                     | Required When                                          |
 | ---------------- | ----------------------------------------------------------- | ------------------------------------------------------ |
@@ -93,12 +96,55 @@ export default function App() {
             </button>
           </Flex>
         </Flex>
-        <AddressFormMap mapStyle={["Standard", "Light"]} />
+        <AddressForm.Map mapStyle={["Standard", "Light"]} />
       </Flex>
     </AddressForm>
   );
 }
 ```
+
+##### Authenticating with an AWS SDK client
+
+If you'd rather authenticate API calls (Autocomplete, Suggest, GetPlace, ReverseGeocode) with AWS credentials than an API key, pass a pre-configured `GeoPlacesClient` via the `client` prop:
+
+```jsx
+import React from "react";
+import { GeoPlacesClient } from "@aws-sdk/client-geo-places";
+import { AddressForm, Flex } from "@aws/address-form-sdk-js";
+
+const client = new GeoPlacesClient({
+  region: "AMAZON_LOCATION_REGION",
+  // Provide credentials however you normally would (Cognito, IAM, custom provider, etc.)
+  credentials: yourCredentialsProvider,
+});
+
+// transformRequest receives a geo:// protocol URL (e.g. "geo://Standard?color-scheme=Light")
+// and must return a signed Amazon Location Service map request.
+const transformRequest = (url, resourceType) => {
+  if (url.startsWith("geo://")) {
+    return { url: yourSignedUrl };
+  }
+  return { url };
+};
+
+export default function App() {
+  return (
+    <AddressForm
+      region="AMAZON_LOCATION_REGION"
+      client={client}
+      onSubmit={async (getData) => {
+        const data = await getData({ intendedUse: "SingleUse" });
+        console.log(data);
+      }}
+    >
+      {/* ...form fields... */}
+      <AddressForm.Map mapStyle={["Standard", "Light"]} transformRequest={transformRequest} />
+    </AddressForm>
+  );
+}
+```
+
+The `client` option is React-only; the standalone HTML/JavaScript bundle continues to require an `apiKey`.
 
 #### HTML/JavaScript
 
@@ -185,18 +231,19 @@ Other countries are in Preview, where the `addressLineOne` field displays the co
 
 #### Props
 
-| Property                        | Type                            | Required | Default | Description                                                                                                                                                                                                                                  |
-| ------------------------------- | ------------------------------- | -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apiKey`                        | `string`                        | Yes      | -       | The Amazon Location Service API key used to authenticate requests                                                                                                                                                                            |
-| `region`                        | `string`                        | Yes      | -       | The AWS region where Amazon Location Service is called (e.g., "us-east-1")                                                                                                                                                                   |
-| `language`                      | `string`                        | No       | -       | [Language code](https://en.wikipedia.org/wiki/IETF_language_tag#List_of_common_primary_language_subtags) for localized address suggestions (e.g., "en", "es")                                                                                |
-| `politicalView`                 | `string`                        | No       | -       | Political view for address results, affecting disputed territories display                                                                                                                                                                   |
-| `showCurrentCountryResultsOnly` | `boolean`                       | No       | `false` | Limits autofill suggestions to the country selected in the `Country` field                                                                                                                                                                   |
-| `allowedCountries`              | `string[]`                      | No       | -       | Array of ISO country codes (alpha-2 or alpha-3) to restrict address suggestions. See [countries.ts](lib/data/countries.ts) for alpha-2 reference                                                                                             |
-| `placeTypes`                    | `AutocompleteFilterPlaceType[]` | No       | -       | Array of [place types](https://docs.aws.amazon.com/location/latest/APIReference/API_geoplaces_AutocompleteFilter.html#location-Type-geoplaces_AutocompleteFilter-IncludePlaceTypes) to filter results (e.g., "Locality", "PostalCode")       |
-| `initialMapCenter`              | `[number, number]`              | No       | -       | Initial map center as [longitude, latitude] coordinates. If not provided and a single country is specified in `allowedCountries`, the map centers on that country's capital                                                                  |
-| `initialMapZoom`                | `number`                        | No       | Varies  | Initial map zoom level. Defaults: 10 when `initialMapCenter` is provided, 5 when centering on a single allowed country, 1 otherwise                                                                                                          |
-| `onSubmit`                      | `(getData) => void`             | No       | -       | Callback function that receives a `getData` async function for retrieving [form data](https://github.com/aws-geospatial/address-form-sdk-js/blob/30fd74fcad353249ad54cc69c4bc5dd39fda7680/README.md?plain=1#L219) with intendedUse parameter |
+| Property                        | Type                            | Required | Default | Description                                                                                                                                                                                                                                           |
+| ------------------------------- | ------------------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`                        | `string`                        | Cond.\*  | -       | The Amazon Location Service API key used to authenticate requests. Required unless a `client` is provided.                                                                                                                                    |
+| `region`                        | `string`                        | Yes      | -       | The AWS region where Amazon Location Service is called (e.g., "us-east-1")                                                                                                                                                                            |
+| `client`                        | `GeoPlacesClient`               | Cond.\*  | -       | Pre-configured `GeoPlacesClient` from `@aws-sdk/client-geo-places`. When provided, Places API calls (Autocomplete, Suggest, GetPlace, ReverseGeocode) are made through this client. Required unless an `apiKey` is provided.                          |
+| `language`                      | `string`                        | No       | -       | [Language code](https://en.wikipedia.org/wiki/IETF_language_tag#List_of_common_primary_language_subtags) for localized address suggestions (e.g., "en", "es")                                                                                         |
+| `politicalView`                 | `string`                        | No       | -       | Political view for address results, affecting disputed territories display                                                                                                                                                                            |
+| `showCurrentCountryResultsOnly` | `boolean`                       | No       | `false` | Limits autofill suggestions to the country selected in the `Country` field                                                                                                                                                                            |
+| `allowedCountries`              | `string[]`                      | No       | -       | Array of ISO country codes (alpha-2 or alpha-3) to restrict address suggestions. See [countries.ts](lib/data/countries.ts) for alpha-2 reference                                                                                                      |
+| `placeTypes`                    | `AutocompleteFilterPlaceType[]` | No       | -       | Array of [place types](https://docs.aws.amazon.com/location/latest/APIReference/API_geoplaces_AutocompleteFilter.html#location-Type-geoplaces_AutocompleteFilter-IncludePlaceTypes) to filter results (e.g., "Locality", "PostalCode")                |
+| `initialMapCenter`              | `[number, number]`              | No       | -       | Initial map center as [longitude, latitude] coordinates. If not provided and a single country is specified in `allowedCountries`, the map centers on that country's capital                                                                           |
+| `initialMapZoom`                | `number`                        | No       | Varies  | Initial map zoom level. Defaults: 10 when `initialMapCenter` is provided, 5 when centering on a single allowed country, 1 otherwise                                                                                                                   |
+| `onSubmit`                      | `(getData) => void`             | No       | -       | Callback function that receives a `getData` async function for retrieving [form data](https://github.com/aws-geospatial/address-form-sdk-js/blob/30fd74fcad353249ad54cc69c4bc5dd39fda7680/README.md?plain=1#L219) with intendedUse parameter          |
 
 #### Form Submission Data
 
@@ -274,21 +321,20 @@ Primary address input with autofill functionality. See [Supported Countries](#su
 <button data-type="address-form" type="reset">Reset</button>
 ```
 
-### AddressFormMap
+### AddressForm.Map
 
 Map component for displaying and adjusting address location.
 
-**React:** Map component for displaying and adjusting address location. `<AddressFormMap mapStyle={...}>`
+**React:** Map component for displaying and adjusting address location. `<AddressForm.Map mapStyle={...}>`
 
 **HTML/JavaScript:** Map element for displaying and adjusting address location.`<div data-type="address-form" data-map-style="...">`
-
-#### Props
 
 #### Props
 
 | React Property          | React Type | HTML/JavaScript Attribute      | HTML/JavaScript Type | Required | Default | Description                            |
 | ----------------------- | ---------- | ------------------------------ | -------------------- | -------- | ------- | -------------------------------------- |
 | `mapStyle`              | `array`    | `data-map-style`               | `string`             | Yes      | -       | Map style configuration                |
+| `transformRequest`      | `function` | -                              | -                    | No       | -       | Callback to sign map tile requests when no `apiKey` is provided. Receives a `geo://` protocol URL (e.g. `geo://Standard?color-scheme=Light`) that must be transformed into a signed request. React only. |
 | `showNavigationControl` | `boolean`  | `data-show-navigation-control` | `string`             | No       | `true`  | Display map navigation controls        |
 | `adjustablePosition`    | `boolean`  | `data-adjustable-position`     | `string`             | No       | `true`  | Allow users to adjust address position |
 

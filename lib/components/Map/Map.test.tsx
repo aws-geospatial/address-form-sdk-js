@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { renderWithProvider } from "../../test/utils";
+import { renderWithProvider, renderWithoutApiKey } from "../../test/utils";
 import { Map } from "./index";
 
 vi.mock("react-map-gl/maplibre", () => {
@@ -108,5 +108,29 @@ describe("Map Component", () => {
     const logo = screen.getByTestId("mock-logo");
     expect(logo).toBeInTheDocument();
     expect(logo).toHaveAttribute("data-mode", "Dark");
+  });
+
+  it("uses geo:// style URL when no apiKey is provided", () => {
+    renderWithoutApiKey(<Map mapStyle={["Standard", "Light"]} />);
+    const mapComponent = screen.getByTestId("mock-maplibre-map");
+    expect(mapComponent).toHaveAttribute("data-mapstyle", "geo://Standard?color-scheme=Light");
+  });
+
+  it("uses geo:// style URL without color-scheme for Satellite when no apiKey", () => {
+    renderWithoutApiKey(<Map mapStyle={["Satellite", "Light"]} />);
+    const mapComponent = screen.getByTestId("mock-maplibre-map");
+    expect(mapComponent).toHaveAttribute("data-mapstyle", "geo://Satellite");
+  });
+
+  it("includes politicalView in geo:// style URL when no apiKey", () => {
+    renderWithoutApiKey(<Map mapStyle={["Standard", "Light"]} politicalView="IN" />);
+    const mapComponent = screen.getByTestId("mock-maplibre-map");
+    expect(mapComponent).toHaveAttribute("data-mapstyle", "geo://Standard?color-scheme=Light&political-view=IN");
+  });
+
+  it("uses geo:// style URL with Dark color-scheme when no apiKey", () => {
+    renderWithoutApiKey(<Map mapStyle={["Monochrome", "Dark"]} />);
+    const mapComponent = screen.getByTestId("mock-maplibre-map");
+    expect(mapComponent).toHaveAttribute("data-mapstyle", "geo://Monochrome?color-scheme=Dark");
   });
 });

@@ -51,22 +51,38 @@ export function Map({
 const getMapStyle = (
   extendedMapStyle: ExtendedMapStyle,
   region: string,
-  apiKey: string,
+  apiKey: string | undefined,
   politicalView?: string,
 ): MapLibreMapProps["mapStyle"] => {
   if (Array.isArray(extendedMapStyle)) {
     const [mapStyle, colorScheme = "Light"] = extendedMapStyle;
-    let mapStyleDescriptor = `https://maps.geo.${region}.amazonaws.com/v2/styles/${mapStyle}/descriptor?key=${apiKey}`;
+
+    if (apiKey) {
+      let mapStyleDescriptor = `https://maps.geo.${region}.amazonaws.com/v2/styles/${mapStyle}/descriptor?key=${apiKey}`;
+
+      if (colorScheme && (mapStyle === "Standard" || mapStyle === "Monochrome")) {
+        mapStyleDescriptor += `&color-scheme=${colorScheme}`;
+      }
+
+      if (politicalView) {
+        mapStyleDescriptor += `&political-view=${politicalView}`;
+      }
+
+      return mapStyleDescriptor;
+    }
+
+    // No apiKey: use geo:// protocol URL; consumer must provide transformRequest to sign requests.
+    let geoUrl = `geo://${mapStyle}`;
 
     if (colorScheme && (mapStyle === "Standard" || mapStyle === "Monochrome")) {
-      mapStyleDescriptor += `&color-scheme=${colorScheme}`;
+      geoUrl += `?color-scheme=${colorScheme}`;
     }
 
     if (politicalView) {
-      mapStyleDescriptor += `&political-view=${politicalView}`;
+      geoUrl += `${geoUrl.includes("?") ? "&" : "?"}political-view=${politicalView}`;
     }
 
-    return mapStyleDescriptor;
+    return geoUrl;
   }
 
   return extendedMapStyle;
