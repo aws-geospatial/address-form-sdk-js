@@ -33,18 +33,8 @@ export interface AddressFormData {
 }
 
 export interface AddressFormProps extends AddressFormContentProps {
-  /**
-   * Amazon Location Service API key. Required unless a pre-configured `client` is provided.
-   * When omitted and rendering `<AddressForm.Map>`, a `geo://` protocol style URL is used
-   * and the consumer must supply a `transformRequest` prop to sign map tile requests.
-   */
   apiKey?: string;
   region: string;
-  /**
-   * Optional pre-configured `GeoPlacesClient`. Provide this to authenticate Places API
-   * calls (Autocomplete, Suggest, GetPlace, ReverseGeocode) with AWS credentials instead of
-   * an API key. When supplied, `apiKey` becomes optional for those calls.
-   */
   client?: GeoPlacesClient;
   language?: string;
   politicalView?: string;

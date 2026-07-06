@@ -4,7 +4,11 @@ import AmazonLocationContext from "../../context/amazon-location-context";
 import { initializeAwsSdkClient } from "../../utils/api";
 import { queryClient } from "../../utils/query-client";
 import { GeoPlacesClient } from "@aws-sdk/client-geo-places";
-type AmazonLocationProviderProps = PropsWithChildren & { apiKey?: string; region: string; client?: GeoPlacesClient };
+type AmazonLocationProviderProps = PropsWithChildren & {
+  apiKey?: string;
+  region: string;
+  client?: GeoPlacesClient;
+};
 
 export function AmazonLocationProvider({ apiKey, region, children, client }: AmazonLocationProviderProps) {
   const value = useMemo(() => {
