@@ -43,4 +43,18 @@ describe("Notification Container", () => {
 
     expect(screen.queryByText("Test notification")).not.toBeInTheDocument();
   });
+
+  it("renders warning notification with data-notification-type attribute", () => {
+    const { addNotification } = useNotificationStore.getState();
+
+    addNotification({ message: "Warning message", type: "warning" });
+
+    render(<Container />);
+
+    expect(screen.getByText("Warning message")).toBeInTheDocument();
+    expect(screen.getByText("Warning message").closest(".aws-notification")).toHaveAttribute(
+      "data-notification-type",
+      "warning",
+    );
+  });
 });

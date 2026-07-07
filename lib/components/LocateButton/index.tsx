@@ -2,7 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ComponentProps, useState } from "react";
 import { Locate } from "../../icons/Locate.tsx";
 import { reverseGeocodeQuery } from "../../utils/queries.ts";
+import { useNotificationStore } from "../../stores/notificationStore.ts";
 import { TypeaheadOutput } from "../Typeahead/index.tsx";
+import { Tooltip } from "../Tooltip/index.tsx";
 import { styleButton } from "./styles.css.ts";
 import useAmazonLocationContext from "../../hooks/use-amazon-location-context.ts";
 
@@ -15,6 +17,7 @@ export function LocateButton({ onLocate, className = "", ...restProps }: LocateB
   const [isDisabled, setIsDisabled] = useState(false);
   const queryClient = useQueryClient();
   const { client } = useAmazonLocationContext();
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
   const getCurrentLocation = (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -44,6 +47,8 @@ export function LocateButton({ onLocate, className = "", ...restProps }: LocateB
             fullAddress: result.ResultItems[0].Address,
             position: result.ResultItems[0].Position as [number, number],
           });
+        } else {
+          addNotification({ message: "No results found for your current location", type: "warning" });
         }
       },
       (err) => {
@@ -54,14 +59,16 @@ export function LocateButton({ onLocate, className = "", ...restProps }: LocateB
   };
 
   return (
-    <button
-      onClick={getCurrentLocation}
-      className={`${styleButton} ${className || ""}`}
-      {...restProps}
-      disabled={isDisabled}
-      data-testid="aws-current-location"
-    >
-      <Locate />
-    </button>
+    <Tooltip text="Current location is unavailable" show={isDisabled}>
+      <button
+        onClick={getCurrentLocation}
+        className={`${styleButton} ${className || ""}`}
+        {...restProps}
+        disabled={isDisabled}
+        data-testid="aws-current-location"
+      >
+        <Locate />
+      </button>
+    </Tooltip>
   );
 }

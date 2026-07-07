@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type NotificationType = "error";
+export type NotificationType = "error" | "warning";
 
 export type Notification = {
   id: string;

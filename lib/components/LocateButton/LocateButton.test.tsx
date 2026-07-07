@@ -40,6 +40,34 @@ describe("LocateButton Component", () => {
     expect(screen.getByTestId("locate-icon")).toBeInTheDocument();
   });
 
+  it("does not show tooltip when button is enabled", () => {
+    renderWithProvider(<LocateButton onLocate={() => {}} />);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("shows tooltip when button is disabled due to geolocation error", async () => {
+    mockGeolocation.getCurrentPosition.mockImplementation((_success, error) => {
+      error({ message: "User denied Geolocation" });
+    });
+    renderWithProvider(<LocateButton {...mockProps} />);
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => {
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Current location is unavailable");
+      expect(screen.getByRole("button")).toBeDisabled();
+    });
+  });
+
+  it("shows tooltip when geolocation is not supported", () => {
+    Object.defineProperty(global.navigator, "geolocation", {
+      value: undefined,
+      configurable: true,
+    });
+    renderWithProvider(<LocateButton {...mockProps} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Current location is unavailable");
+    expect(screen.getByRole("button")).toBeDisabled();
+  });
+
   it("handles click and gets current location", async () => {
     mockGeolocation.getCurrentPosition.mockImplementation((success) => {
       success({
@@ -87,6 +115,27 @@ describe("LocateButton Component", () => {
         },
         position: [-122.3321, 47.6062],
       });
+    });
+  });
+
+  it("shows warning notification when no results are returned", async () => {
+    mockGeolocation.getCurrentPosition.mockImplementation((success) => {
+      success({
+        coords: {
+          latitude: 47.6062,
+          longitude: -122.3321,
+        },
+      });
+    });
+    vi.mocked(api.reverseGeocode).mockResolvedValue({
+      ResultItems: [],
+      PricingBucket: "mock-pricing-bucket",
+      $metadata: {},
+    });
+    renderWithProvider(<LocateButton {...mockProps} />);
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => {
+      expect(mockProps.onLocate).not.toHaveBeenCalled();
     });
   });
 });
