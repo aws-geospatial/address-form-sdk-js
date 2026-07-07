@@ -10,7 +10,10 @@ type NotificationProps = {
 
 export const Notification: FunctionComponent<NotificationProps> = ({ notification, onRemove }) => {
   return (
-    <div className={clsx(notificationVariants[notification.type], "aws-notification")} data-notification-type={notification.type}>
+    <div
+      className={clsx(notificationVariants[notification.type], "aws-notification")}
+      data-notification-type={notification.type}
+    >
       <span className={messageVariants[notification.type]}>{notification.message}</span>
       <button className={closeButtonVariants[notification.type]} onClick={() => onRemove(notification.id)}>
         ×
