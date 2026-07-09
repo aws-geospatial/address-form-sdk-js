@@ -1,6 +1,6 @@
 import type { AutocompleteFilterPlaceType, Address } from "@aws-sdk/client-geo-places";
 import clsx from "clsx";
-import { ComponentProps, FormEventHandler, useState } from "react";
+import { ComponentProps, FormEventHandler, useRef, useState } from "react";
 import type { Config } from "../../types/config.ts";
 import { getIncludeCountriesFilter } from "../../utils/country-filter.ts";
 import { Button } from "../Button";
@@ -8,7 +8,7 @@ import { CountrySelect } from "../CountrySelect/index.tsx";
 import { FormField } from "../FormField";
 import { Input } from "../Input";
 import { Map, MapProps, MapStyle } from "../Map";
-import { MapMarker, MapMarkerProps } from "../MapMarker/index.tsx";
+import { MapMarker } from "../MapMarker/index.tsx";
 import { Typeahead, TypeaheadOutput, TypeaheadProps } from "../Typeahead";
 import { TypeaheadAPIName } from "../Typeahead/use-typeahead-query.ts";
 import * as styles from "./styles.css.ts";
@@ -262,22 +262,70 @@ export function AddressForm({
   );
 }
 
-export type AddressFormMapProps = MapProps & MapMarkerProps;
+export interface AddressFormMapProps extends MapProps {
+  adjustablePosition?: boolean;
+  markerPosition?: [number, number];
+  onSaveMarkerPosition?: (position: [number, number]) => void;
+}
 
 export const AddressFormMap = ({
   adjustablePosition,
   markerPosition,
   onSaveMarkerPosition,
+  onMove,
   ...mapProps
 }: AddressFormMapProps) => {
+  const [hasAdjusted, setHasAdjusted] = useState(false);
+  const originalPositionRef = useRef<[number, number] | undefined>(markerPosition);
+  const prevMarkerPositionRef = useRef<[number, number] | undefined>(markerPosition);
+
+  if (
+    markerPosition &&
+    (prevMarkerPositionRef.current?.[0] !== markerPosition[0] ||
+      prevMarkerPositionRef.current?.[1] !== markerPosition[1])
+  ) {
+    if (!hasAdjusted) {
+      originalPositionRef.current = markerPosition;
+    }
+    prevMarkerPositionRef.current = markerPosition;
+  }
+
+  const handleMove = (evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
+    onMove?.(evt as Parameters<NonNullable<typeof onMove>>[0]);
+
+    const orig = originalPositionRef.current;
+    if (!orig || !adjustablePosition) return;
+
+    const movedAway =
+      Math.abs(evt.viewState.longitude - orig[0]) > 0.0001 || Math.abs(evt.viewState.latitude - orig[1]) > 0.0001;
+
+    if (movedAway) {
+      setHasAdjusted(true);
+      onSaveMarkerPosition?.([evt.viewState.longitude, evt.viewState.latitude]);
+    } else {
+      setHasAdjusted(false);
+    }
+  };
+
+  const handleReset = () => {
+    const orig = originalPositionRef.current;
+    if (orig) {
+      setHasAdjusted(false);
+      onSaveMarkerPosition?.(orig);
+    }
+  };
+
   return (
-    <Map {...mapProps}>
-      <MapMarker
-        adjustablePosition={adjustablePosition}
-        markerPosition={markerPosition}
-        onSaveMarkerPosition={onSaveMarkerPosition}
-        colorScheme={getColorScheme(mapProps.mapStyle)}
-      />
+    <Map {...mapProps} onMove={handleMove}>
+      {markerPosition && (
+        <MapMarker
+          adjustablePosition={adjustablePosition}
+          markerPosition={originalPositionRef.current}
+          hasAdjustedPosition={hasAdjusted}
+          onReset={handleReset}
+          colorScheme={getColorScheme(mapProps.mapStyle)}
+        />
+      )}
     </Map>
   );
 };

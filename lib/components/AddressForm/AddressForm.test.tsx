@@ -15,10 +15,6 @@ vi.mock("../Map", () => ({
   ),
 }));
 
-vi.mock("../MapMarker", () => ({
-  MapMarker: () => <div data-testid="map-marker"></div>,
-}));
-
 vi.mock("../Typeahead", () => ({
   Typeahead: ({ id, onSelect, placeholder }: TypeaheadProps) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +45,6 @@ describe("AddressForm", () => {
     expect(screen.getByTestId("aws-postal-code")).toBeInTheDocument();
     expect(screen.getByLabelText("Country")).toBeInTheDocument();
     expect(screen.getByTestId("map")).toBeInTheDocument();
-    expect(screen.getByTestId("map-marker")).toBeInTheDocument();
   });
 
   it("renders with configured props", () => {
@@ -80,7 +75,6 @@ describe("AddressForm", () => {
     expect(screen.queryByTestId("aws-postal-code")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Country")).toBeInTheDocument();
     expect(screen.queryByTestId("map")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("map-marker")).not.toBeInTheDocument();
   });
 
   it("submits form data when submit button is clicked", async () => {

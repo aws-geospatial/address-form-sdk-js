@@ -43,7 +43,7 @@ export function Map({
       style={{ width: "100%", height: "100%", borderRadius: 4 }}
       {...rest}
     >
-      {showNavigationControl && <NavigationControl />}
+      {showNavigationControl && <NavigationControl position="bottom-right" />}
 
       <div className={logo}>
         <Logo mode={getLogoMode(extendedMapStyle)} />

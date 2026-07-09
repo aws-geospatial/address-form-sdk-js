@@ -1,70 +1,72 @@
-import { useRef, useState } from "react";
+import clsx from "clsx";
 import { Marker } from "react-map-gl/maplibre";
-import { AdjustButton } from "./AdjustButton";
-import { buttons } from "./styles.css.ts";
+import { AdjustButton } from "../AdjustButton";
+import { pinContainer, adjustmentMessageContainer } from "./styles.css.ts";
 import { ColorScheme } from "../Map/index.tsx";
 
 export interface MapMarkerProps {
   adjustablePosition?: boolean;
   markerPosition?: [number, number];
-  onSaveMarkerPosition?: (position: [number, number]) => void;
+  hasAdjustedPosition?: boolean;
+  onReset?: () => void;
   colorScheme?: ColorScheme;
 }
 
 export function MapMarker({
   adjustablePosition = true,
   markerPosition,
-  onSaveMarkerPosition,
+  hasAdjustedPosition = false,
+  onReset,
   colorScheme,
 }: MapMarkerProps) {
-  const markerRef = useRef<maplibregl.Marker>(null);
-  const [isAdjustMode, setIsAdjustMode] = useState(false);
+  if (!adjustablePosition) {
+    if (!markerPosition) return null;
 
-  const handleAdjustMarker = () => {
-    setIsAdjustMode(true);
-  };
-
-  const handleSaveMarkerPosition = () => {
-    if (onSaveMarkerPosition && markerRef.current) {
-      const lngLat = markerRef.current.getLngLat();
-      onSaveMarkerPosition([lngLat.lng, lngLat.lat]);
-      setIsAdjustMode(false);
-    }
-  };
-
-  const handleCancelAdjustMarker = () => {
-    if (markerRef.current && markerPosition) {
-      markerRef.current.setLngLat(markerPosition);
-    }
-    setIsAdjustMode(false);
-  };
-
-  if (markerPosition) {
     return (
-      <>
-        {adjustablePosition && (
-          <div className={buttons}>
-            {isAdjustMode ? (
-              <>
-                <AdjustButton onClick={handleSaveMarkerPosition}>Set location</AdjustButton>
-
-                <AdjustButton onClick={handleCancelAdjustMarker}>Cancel</AdjustButton>
-              </>
-            ) : (
-              <AdjustButton onClick={handleAdjustMarker}>Adjust marker</AdjustButton>
-            )}
-          </div>
-        )}
-
-        <Marker
-          draggable={adjustablePosition && isAdjustMode}
-          longitude={markerPosition[0]}
-          latitude={markerPosition[1]}
-          anchor="bottom"
-          color={colorScheme === "Light" ? "#000" : "#ddd"}
-          ref={markerRef}
-        />
-      </>
+      <Marker
+        longitude={markerPosition[0]}
+        latitude={markerPosition[1]}
+        anchor="bottom"
+        color={colorScheme === "Light" ? "#000000" : "#ffffff"}
+      />
     );
   }
+
+  return (
+    <>
+      <div className={clsx(adjustmentMessageContainer, "aws-map-adjustment")}>
+        <span>{hasAdjustedPosition ? "Location adjusted" : "Move the map to adjust pin location"}</span>
+        {hasAdjustedPosition && <AdjustButton onClick={onReset}>Undo adjustment</AdjustButton>}
+      </div>
+
+      <div className={clsx(pinContainer, "aws-map-pin")} aria-hidden="true">
+        <svg width="22" height="37" viewBox="0 0 27 41" xmlns="http://www.w3.org/2000/svg">
+          <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+            <g fillRule="nonzero">
+              <g transform="translate(3.0, 29.0)" fill="#000000">
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="10.5" ry="5.25002273" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="10.5" ry="5.25002273" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="9.5" ry="4.77275007" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="8.5" ry="4.29549936" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="7.5" ry="3.81822308" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="6.5" ry="3.34094679" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="5.5" ry="2.86367051" />
+                <ellipse opacity="0.04" cx="10.5" cy="5.80029008" rx="4.5" ry="2.38636864" />
+              </g>
+              <g fill={colorScheme === "Light" ? "#000000" : "#ffffff"}>
+                <path d="M27,13.5 C27,19.074644 20.250001,27.000002 14.75,34.500002 C14.016665,35.500004 12.983335,35.500004 12.25,34.500002 C6.7499993,27.000002 0,19.222562 0,13.5 C0,6.0441559 6.0441559,0 13.5,0 C20.955844,0 27,6.0441559 27,13.5 Z" />
+              </g>
+              <g opacity="0.25" fill="#000000">
+                <path d="M13.5,0 C6.0441559,0 0,6.0441559 0,13.5 C0,19.222562 6.7499993,27 12.25,34.5 C13,35.522727 14.016664,35.500004 14.75,34.5 C20.250001,27 27,19.074644 27,13.5 C27,6.0441559 20.955844,0 13.5,0 Z M13.5,1 C20.415404,1 26,6.584596 26,13.5 C26,15.898657 24.495584,19.181431 22.220703,22.738281 C19.945823,26.295132 16.705119,30.142167 13.943359,33.908203 C13.743445,34.180814 13.612715,34.322738 13.5,34.441406 C13.387285,34.322738 13.256555,34.180814 13.056641,33.908203 C10.284481,30.127985 7.4148684,26.314159 5.015625,22.773438 C2.6163816,19.232715 1,15.953538 1,13.5 C1,6.584596 6.584596,1 13.5,1 Z" />
+              </g>
+              <g transform="translate(8.0, 8.0)">
+                <circle fill="#000000" opacity="0.25" cx="5.5" cy="5.5" r="5.4999962" />
+                <circle fill={colorScheme === "Light" ? "#ffffff" : "#000000"} cx="5.5" cy="5.5" r="5.4999962" />
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </>
+  );
 }

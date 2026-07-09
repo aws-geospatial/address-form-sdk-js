@@ -9,15 +9,37 @@ import { useNotificationStore } from "../../stores/notificationStore";
 export type AddressFormMapProps = MapProps & Pick<MapMarkerProps, "adjustablePosition">;
 
 export const AddressFormMap: FunctionComponent<AddressFormMapProps> = ({
-  adjustablePosition,
+  adjustablePosition = true,
   children,
   ...mapProps
 }) => {
   const { data, setData, mapViewState, setMapViewState } = useAddressFormContext();
   const addNotification = useNotificationStore((state) => state.addNotification);
 
-  const handleSaveMarkerPosition = (markerPosition: [number, number]) => {
-    setData({ adjustedPosition: markerPosition.join(",") });
+  const originalPosition = parsePosition(data.originalPosition ?? "");
+  const hasAdjustedPosition = Boolean(data.adjustedPosition);
+
+  const handleMove = ({ viewState }: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
+    setMapViewState(viewState);
+
+    if (!originalPosition || !adjustablePosition) return;
+
+    const [origLng, origLat] = originalPosition;
+    const movedAway =
+      Math.abs(viewState.longitude - origLng) > 0.0001 || Math.abs(viewState.latitude - origLat) > 0.0001;
+
+    if (movedAway) {
+      setData({ adjustedPosition: `${viewState.longitude},${viewState.latitude}` });
+    } else {
+      setData({ adjustedPosition: undefined });
+    }
+  };
+
+  const handleReset = () => {
+    if (originalPosition && mapViewState) {
+      setMapViewState({ ...mapViewState, longitude: originalPosition[0], latitude: originalPosition[1] });
+      setData({ adjustedPosition: undefined });
+    }
   };
 
   const handleMapError = (error: unknown) => {
@@ -43,18 +65,16 @@ export const AddressFormMap: FunctionComponent<AddressFormMapProps> = ({
   };
 
   return (
-    <Map
-      {...mapViewState}
-      onMove={({ viewState }) => setMapViewState(viewState)}
-      onError={handleMapError}
-      {...mapProps}
-    >
-      <MapMarker
-        adjustablePosition={adjustablePosition}
-        markerPosition={parsePosition(data.adjustedPosition ?? data.originalPosition ?? "")}
-        onSaveMarkerPosition={handleSaveMarkerPosition}
-        colorScheme={getColorScheme(mapProps.mapStyle)}
-      />
+    <Map {...mapViewState} onMove={handleMove} onError={handleMapError} {...mapProps}>
+      {originalPosition && (
+        <MapMarker
+          adjustablePosition={adjustablePosition}
+          markerPosition={originalPosition}
+          hasAdjustedPosition={hasAdjustedPosition}
+          onReset={handleReset}
+          colorScheme={getColorScheme(mapProps.mapStyle)}
+        />
+      )}
       {children}
     </Map>
   );

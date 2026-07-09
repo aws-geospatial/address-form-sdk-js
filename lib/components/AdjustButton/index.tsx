@@ -1,5 +1,5 @@
 import { FunctionComponent } from "react";
-import { Button, ButtonProps } from "../../Button";
+import { Button, ButtonProps } from "../Button";
 import { root } from "./styles.css";
 import clsx from "clsx";
 
