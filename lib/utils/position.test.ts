@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { positionToString } from "./position";
+import { isSamePosition, positionToString } from "./position";
 
 describe("positionToString", () => {
   it("converts coordinates to string with 6 decimal places", () => {
@@ -12,5 +12,27 @@ describe("positionToString", () => {
 
   it("handles negative coordinates", () => {
     expect(positionToString([-1.5, -2.5])).toBe("-1.500000,-2.500000");
+  });
+});
+
+describe("isSamePosition", () => {
+  it("returns true for identical positions", () => {
+    expect(isSamePosition([-122.4, 47.6], [-122.4, 47.6])).toBe(true);
+  });
+
+  it("returns false for different positions", () => {
+    expect(isSamePosition([-122.4, 47.6], [-122.5, 47.7])).toBe(false);
+  });
+
+  it("returns false when first position is undefined", () => {
+    expect(isSamePosition(undefined, [-122.4, 47.6])).toBe(false);
+  });
+
+  it("returns false when second position is undefined", () => {
+    expect(isSamePosition([-122.4, 47.6], undefined)).toBe(false);
+  });
+
+  it("returns false when both positions are undefined", () => {
+    expect(isSamePosition(undefined, undefined)).toBe(false);
   });
 });

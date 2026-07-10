@@ -12,7 +12,7 @@ import { MapMarker } from "../MapMarker/index.tsx";
 import { Typeahead, TypeaheadOutput, TypeaheadProps } from "../Typeahead";
 import { TypeaheadAPIName } from "../Typeahead/use-typeahead-query.ts";
 import * as styles from "./styles.css.ts";
-import { positionToString } from "../../utils/position.ts";
+import { isSamePosition, positionToString } from "../../utils/position.ts";
 import { countries, getColorScheme } from "../../main.tsx";
 import { defaultAddressFormFields, FormFieldID } from "./form-field.ts";
 
@@ -137,6 +137,7 @@ export function AddressForm({
       province: value.fullAddress?.Region?.Name,
       country: value.fullAddress?.Country?.Code2,
       originalPosition: value.position ? positionToString(value.position) : "",
+      adjustedPosition: undefined,
       addressDetails: value.fullAddress,
     }));
 
@@ -153,9 +154,10 @@ export function AddressForm({
   };
 
   const handleSaveMarkerPosition = (position: [number, number]) => {
+    const posString = positionToString(position);
     setFormState((state) => ({
       ...state,
-      adjustedPosition: positionToString(position),
+      adjustedPosition: posString === state.originalPosition ? undefined : posString,
     }));
 
     setMarkerPosition(position);
@@ -277,34 +279,49 @@ export const AddressFormMap = ({
 }: AddressFormMapProps) => {
   const [hasAdjusted, setHasAdjusted] = useState(false);
   const originalPositionRef = useRef<[number, number] | undefined>(markerPosition);
-  const prevMarkerPositionRef = useRef<[number, number] | undefined>(markerPosition);
+  const lastSavedRef = useRef<[number, number] | undefined>(undefined);
 
   if (
     markerPosition &&
-    (prevMarkerPositionRef.current?.[0] !== markerPosition[0] ||
-      prevMarkerPositionRef.current?.[1] !== markerPosition[1])
+    !isSamePosition(originalPositionRef.current, markerPosition) &&
+    !isSamePosition(lastSavedRef.current, markerPosition)
   ) {
-    if (!hasAdjusted) {
-      originalPositionRef.current = markerPosition;
-    }
-    prevMarkerPositionRef.current = markerPosition;
+    originalPositionRef.current = markerPosition;
+    lastSavedRef.current = undefined;
+    setHasAdjusted(false);
+  } else if (
+    hasAdjusted &&
+    markerPosition &&
+    isSamePosition(originalPositionRef.current, markerPosition) &&
+    !isSamePosition(lastSavedRef.current, markerPosition)
+  ) {
+    lastSavedRef.current = undefined;
+    setHasAdjusted(false);
   }
+
+  const isMovedAway = (lng: number, lat: number) => {
+    const orig = originalPositionRef.current;
+    if (!orig) return false;
+    return Math.abs(lng - orig[0]) > 0.0001 || Math.abs(lat - orig[1]) > 0.0001;
+  };
 
   const handleMove = (evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
     onMove?.(evt as Parameters<NonNullable<typeof onMove>>[0]);
 
-    const orig = originalPositionRef.current;
-    if (!orig || !adjustablePosition) return;
+    if (!originalPositionRef.current || !markerPosition || !adjustablePosition) return;
 
-    const movedAway =
-      Math.abs(evt.viewState.longitude - orig[0]) > 0.0001 || Math.abs(evt.viewState.latitude - orig[1]) > 0.0001;
+    setHasAdjusted(isMovedAway(evt.viewState.longitude, evt.viewState.latitude));
+  };
 
-    if (movedAway) {
-      setHasAdjusted(true);
-      onSaveMarkerPosition?.([evt.viewState.longitude, evt.viewState.latitude]);
-    } else {
-      setHasAdjusted(false);
-    }
+  const handleMoveEnd = (evt: { viewState: { longitude: number; latitude: number; zoom: number } }) => {
+    if (!originalPositionRef.current || !markerPosition || !adjustablePosition) return;
+
+    const position: [number, number] = isMovedAway(evt.viewState.longitude, evt.viewState.latitude)
+      ? [evt.viewState.longitude, evt.viewState.latitude]
+      : originalPositionRef.current;
+
+    lastSavedRef.current = position;
+    onSaveMarkerPosition?.(position);
   };
 
   const handleReset = () => {
@@ -312,11 +329,14 @@ export const AddressFormMap = ({
     if (orig) {
       setHasAdjusted(false);
       onSaveMarkerPosition?.(orig);
+      onMove?.({
+        viewState: { longitude: orig[0], latitude: orig[1], zoom: mapProps.zoom ?? 10 },
+      } as Parameters<NonNullable<typeof onMove>>[0]);
     }
   };
 
   return (
-    <Map {...mapProps} onMove={handleMove}>
+    <Map {...mapProps} onMove={handleMove} onMoveEnd={handleMoveEnd}>
       {markerPosition && (
         <MapMarker
           adjustablePosition={adjustablePosition}
