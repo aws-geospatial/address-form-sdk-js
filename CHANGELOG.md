@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.0]
+
+- Replace draggable marker with center-fixed map panning UX
+- Add tooltip to disabled locate button and warning notification for no results
+- Support optional client prop and transformRequest for map authentication
+
 ## [1.4.1]
 
 - Fixed 9 security vulnerabilities in dependencies
