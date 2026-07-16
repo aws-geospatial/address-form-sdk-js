@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { action } from "@storybook/addon-actions";
-import type { Meta, StoryObj } from "@storybook/react";
+import { action } from "storybook/actions";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { CountrySelect, CountrySelectProps } from "../../lib/main";
 

@@ -1,4 +1,4 @@
-import type { Preview } from "@storybook/react";
+import type { Preview } from "@storybook/react-vite";
 import { AmazonLocationProvider } from "@/components/AmazonLocationProvider";
 import "maplibre-gl/dist/maplibre-gl.css";
 
