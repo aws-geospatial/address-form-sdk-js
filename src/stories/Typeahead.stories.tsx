@@ -1,5 +1,5 @@
-import { action } from "@storybook/addon-actions";
-import type { Meta, StoryObj } from "@storybook/react";
+import { action } from "storybook/actions";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { TypeaheadProps } from "../../lib/components/Typeahead";
 import { Typeahead } from "../../lib/main";

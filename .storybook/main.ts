@@ -3,11 +3,10 @@ import type { StorybookConfig } from "@storybook/react-vite";
 const config: StorybookConfig = {
   stories: [
     "../src/stories/AddressFormReact.stories.tsx", // Default (homepage) story
-    "../src/stories/**/*.mdx",
     "../src/stories/**/*.stories.@(js|jsx|mjs|ts|tsx)",
   ],
 
-  addons: ["@storybook/addon-essentials", "@storybook/addon-onboarding", "@storybook/addon-interactions"],
+  addons: ["@storybook/addon-docs", "@storybook/addon-onboarding"],
 
   framework: {
     name: "@storybook/react-vite",
@@ -15,12 +14,11 @@ const config: StorybookConfig = {
   },
 
   viteFinal(config) {
-    if (config.resolve) {
-      config.resolve.alias = {
-        ...config.resolve?.alias,
-        "@": new URL("../lib", import.meta.url).pathname,
-      };
-    }
+    config.resolve ??= {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@": new URL("../lib", import.meta.url).pathname,
+    };
 
     return config;
   },

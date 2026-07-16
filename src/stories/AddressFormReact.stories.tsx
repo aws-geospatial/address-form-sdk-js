@@ -1,7 +1,7 @@
 /* any is used to allow child components to be controlled in Storybook */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Meta, StoryObj } from "@storybook/react";
-import { action } from "@storybook/addon-actions";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { action } from "storybook/actions";
 import { AddressForm } from "../../lib/components/AddressFormReact/AddressForm";
 import { Flex } from "../../lib/components/Flex";
 
