@@ -25,9 +25,7 @@ const config: StorybookConfig = {
     config.build.rollupOptions ??= {};
     const existing = config.build.rollupOptions.external;
     const nodeBuiltins = [...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
-    config.build.rollupOptions.external = Array.isArray(existing)
-      ? [...existing, ...nodeBuiltins]
-      : nodeBuiltins;
+    config.build.rollupOptions.external = Array.isArray(existing) ? [...existing, ...nodeBuiltins] : nodeBuiltins;
 
     return config;
   },
