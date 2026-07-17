@@ -1,3 +1,4 @@
+import { builtinModules } from "module";
 import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
@@ -19,6 +20,12 @@ const config: StorybookConfig = {
       ...config.resolve.alias,
       "@": new URL("../lib", import.meta.url).pathname,
     };
+
+    config.build ??= {};
+    config.build.rollupOptions ??= {};
+    const existing = config.build.rollupOptions.external;
+    const nodeBuiltins = [...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
+    config.build.rollupOptions.external = Array.isArray(existing) ? [...existing, ...nodeBuiltins] : nodeBuiltins;
 
     return config;
   },
