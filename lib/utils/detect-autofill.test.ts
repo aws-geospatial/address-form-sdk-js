@@ -22,7 +22,7 @@ describe("detectAutofill", () => {
   let form: HTMLFormElement;
   let addressInput: HTMLInputElement;
   let cityInput: HTMLInputElement;
-  let callback: ReturnType<typeof vi.fn>;
+  let callback: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     callback = vi.fn();

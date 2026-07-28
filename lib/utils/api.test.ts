@@ -11,13 +11,13 @@ import { withAPIKey } from "@aws/amazon-location-utilities-auth-helper";
 
 vi.mock("@aws-sdk/client-geo-places", () => {
   return {
-    GeoPlacesClient: vi.fn(() => ({
-      send: vi.fn(),
-    })),
-    AutocompleteCommand: vi.fn(),
-    SuggestCommand: vi.fn(),
-    GetPlaceCommand: vi.fn(),
-    ReverseGeocodeCommand: vi.fn(),
+    GeoPlacesClient: vi.fn(function () {
+      return { send: vi.fn() };
+    }),
+    AutocompleteCommand: vi.fn(function AutocompleteCommand() {}),
+    SuggestCommand: vi.fn(function SuggestCommand() {}),
+    GetPlaceCommand: vi.fn(function GetPlaceCommand() {}),
+    ReverseGeocodeCommand: vi.fn(function ReverseGeocodeCommand() {}),
   };
 });
 
@@ -58,12 +58,10 @@ describe("API", () => {
 
     it("should make an Autocomplete request and return the response", async () => {
       client = initializeAwsSdkClient(mockApiKey, mockRegion);
-      const mockCommand = {};
-      vi.mocked(AutocompleteCommand).mockReturnValueOnce(mockCommand as AutocompleteCommand);
       vi.mocked(client.send).mockResolvedValueOnce(mockResponse as unknown as void);
       const result = await autocomplete(client, mockInput);
       expect(AutocompleteCommand).toHaveBeenCalledWith(mockInput);
-      expect(client.send).toHaveBeenCalledWith(mockCommand);
+      expect(client.send).toHaveBeenCalledWith(expect.any(AutocompleteCommand));
       expect(result).toEqual(mockResponse);
     });
 
@@ -81,12 +79,10 @@ describe("API", () => {
 
     it("should make an Suggest request and return the response", async () => {
       client = initializeAwsSdkClient(mockApiKey, mockRegion);
-      const mockCommand = {};
-      vi.mocked(SuggestCommand).mockReturnValueOnce(mockCommand as SuggestCommand);
       vi.mocked(client.send).mockResolvedValueOnce(mockResponse as unknown as void);
       const result = await suggest(client, mockInput);
       expect(SuggestCommand).toHaveBeenCalledWith(mockInput);
-      expect(client.send).toHaveBeenCalledWith(mockCommand);
+      expect(client.send).toHaveBeenCalledWith(expect.any(SuggestCommand));
       expect(result).toEqual(mockResponse);
     });
 
@@ -104,12 +100,10 @@ describe("API", () => {
 
     it("should make an GetPlace request and return the response", async () => {
       client = initializeAwsSdkClient(mockApiKey, mockRegion);
-      const mockCommand = {};
-      vi.mocked(GetPlaceCommand).mockReturnValueOnce(mockCommand as GetPlaceCommand);
       vi.mocked(client.send).mockResolvedValueOnce(mockResponse as unknown as void);
       const result = await getPlace(client, mockInput);
       expect(GetPlaceCommand).toHaveBeenCalledWith(mockInput);
-      expect(client.send).toHaveBeenCalledWith(mockCommand);
+      expect(client.send).toHaveBeenCalledWith(expect.any(GetPlaceCommand));
       expect(result).toEqual(mockResponse);
     });
 
@@ -127,12 +121,10 @@ describe("API", () => {
 
     it("should make an ReverseGeocode request and return the response", async () => {
       client = initializeAwsSdkClient(mockApiKey, mockRegion);
-      const mockCommand = {};
-      vi.mocked(ReverseGeocodeCommand).mockReturnValueOnce(mockCommand as ReverseGeocodeCommand);
       vi.mocked(client.send).mockResolvedValueOnce(mockResponse as unknown as void);
       const result = await reverseGeocode(client, mockInput);
       expect(ReverseGeocodeCommand).toHaveBeenCalledWith(mockInput);
-      expect(client.send).toHaveBeenCalledWith(mockCommand);
+      expect(client.send).toHaveBeenCalledWith(expect.any(ReverseGeocodeCommand));
       expect(result).toEqual(mockResponse);
     });
 
