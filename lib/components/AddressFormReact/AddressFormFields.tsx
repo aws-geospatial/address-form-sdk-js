@@ -6,6 +6,7 @@ import { TypeaheadAPIName } from "../Typeahead/use-typeahead-query";
 import { AddressFormAddressField } from "./AddressFormAddressField";
 import { AddressFormCountryField } from "./AddressFormCountryField";
 import { AddressFormTextField } from "./AddressFormTextField";
+import { SubmitButton } from "./SubmitButton";
 import { getBoolean, getString } from "./utils";
 
 export const Field: Record<string, keyof Omit<AddressFormData, "addressDetails">> = {
@@ -106,7 +107,7 @@ export const AddressFormFields = memo(({ children }: PropsWithChildren) => {
     // Submit
     {
       search: <button data-type="address-form" type="submit" />,
-      replace: (props: ComponentProps<"button">) => <Button {...props} type="submit" />,
+      replace: (props: ComponentProps<"button">) => <SubmitButton {...props} />,
     },
 
     // Reset

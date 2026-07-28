@@ -16,9 +16,11 @@ import { Field } from "./AddressFormFields";
 import { AddressFormMap } from "./AddressFormMap";
 import { AddressFormProvider } from "./AddressFormProvider";
 import { AddressFormTextField } from "./AddressFormTextField";
+import { SubmitButton } from "./SubmitButton";
 import { getBoolean, getString } from "./utils";
 import { NotificationContainer } from "../Notification";
 import { createPortal } from "react-dom";
+import type { CenterBounds } from "../../utils/bounds";
 
 export interface RenderParams {
   root: string;
@@ -32,6 +34,7 @@ export interface RenderParams {
   onSubmit?: SubmitHandler;
   initialMapCenter?: [number, number];
   initialMapZoom?: number;
+  centerBounds?: CenterBounds;
 }
 
 export const render = ({ root: selector, ...formProps }: RenderParams) => {
@@ -65,6 +68,7 @@ export const render = ({ root: selector, ...formProps }: RenderParams) => {
         placeTypes={formProps.placeTypes}
         initialMapCenter={formProps.initialMapCenter}
         initialMapZoom={formProps.initialMapZoom}
+        centerBounds={formProps.centerBounds}
       >
         <FormEventHandler selector={selector} onSubmit={formProps.onSubmit} />
         <AddressFormAutofillHandler form={form} />
@@ -153,9 +157,7 @@ export const render = ({ root: selector, ...formProps }: RenderParams) => {
             {
               selector: 'button[data-type="address-form"][type="submit"]',
               component: (element) => (
-                <Button type="submit" className={element.className || undefined}>
-                  {element.textContent}
-                </Button>
+                <SubmitButton className={element.className || undefined}>{element.textContent}</SubmitButton>
               ),
             },
             {
@@ -179,7 +181,7 @@ const FormEventHandler: FunctionComponent<{
   selector: string;
   onSubmit?: SubmitHandler;
 }> = ({ selector, onSubmit }) => {
-  const { data, setData, resetData } = useAddressFormContext();
+  const { data, setData, resetData, isAdjustedPositionOutOfBounds } = useAddressFormContext();
   const { client } = useAmazonLocationContext();
 
   useEffect(() => {
@@ -188,6 +190,9 @@ const FormEventHandler: FunctionComponent<{
 
     const handleSubmit = (event: Event) => {
       event.preventDefault();
+
+      // Block submission while the adjusted pin is outside the supported region.
+      if (isAdjustedPositionOutOfBounds) return;
 
       onSubmit?.(async ({ intendedUse }) => {
         // If the user is going to store the results (even for caching purposes),
@@ -212,7 +217,7 @@ const FormEventHandler: FunctionComponent<{
       form.removeEventListener("submit", handleSubmit);
       form.removeEventListener("reset", handleReset);
     };
-  }, [selector, data, setData, resetData, onSubmit, client]);
+  }, [selector, data, setData, resetData, onSubmit, client, isAdjustedPositionOutOfBounds]);
 
   return null;
 };

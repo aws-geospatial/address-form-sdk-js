@@ -7,13 +7,17 @@ import { TypeaheadOutput } from "../Typeahead/index.tsx";
 import { Tooltip } from "../Tooltip/index.tsx";
 import { styleButton } from "./styles.css.ts";
 import useAmazonLocationContext from "../../hooks/use-amazon-location-context.ts";
+import { isCenterWithinBounds, type CenterBounds } from "../../utils/bounds.ts";
 
 interface LocateButtonProps extends ComponentProps<"button"> {
   onLocate: (address: TypeaheadOutput) => void;
   className?: string;
+  // Optional supported-region box. A device outside it is reported to the user rather than
+  // looked up, so the field never fills with an in-region address the user is not standing at.
+  queryBounds?: CenterBounds;
 }
 
-export function LocateButton({ onLocate, className = "", ...restProps }: LocateButtonProps) {
+export function LocateButton({ onLocate, className = "", queryBounds, ...restProps }: LocateButtonProps) {
   const [isDisabled, setIsDisabled] = useState(false);
   const queryClient = useQueryClient();
   const { client } = useAmazonLocationContext();
@@ -30,9 +34,18 @@ export function LocateButton({ onLocate, className = "", ...restProps }: LocateB
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        const queryPosition: [number, number] = [position.coords.longitude, position.coords.latitude];
+
+        // Clamping an out-of-region device into the box would return a real in-region address
+        // and present it as the user's location, so report it instead of looking it up.
+        if (!isCenterWithinBounds(queryPosition, queryBounds)) {
+          addNotification({ message: "Your current location is outside the supported region", type: "warning" });
+          return;
+        }
+
         const result = await queryClient.ensureQueryData(
           reverseGeocodeQuery(client, {
-            QueryPosition: [position.coords.longitude, position.coords.latitude],
+            QueryPosition: queryPosition,
           }),
         );
 

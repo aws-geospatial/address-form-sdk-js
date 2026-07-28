@@ -2,9 +2,11 @@ import { AutocompleteFilterPlaceType, GeoPlacesClient } from "@aws-sdk/client-ge
 import { FunctionComponent, PropsWithChildren, useMemo, useState } from "react";
 import type { AddressFormData } from "./AddressForm";
 import { AddressFormContext, AddressFormContextType, MapViewState } from "./AddressFormContext";
+import { parsePosition } from "./utils";
 import { TypeaheadAPIName } from "../Typeahead/use-typeahead-query";
 import { AmazonLocationProvider } from "../AmazonLocationProvider";
 import { countries } from "../../data/countries";
+import { isCenterWithinBounds, type CenterBounds } from "../../utils/bounds";
 
 export interface AddressFormProps extends PropsWithChildren {
   apiKey?: string;
@@ -17,6 +19,7 @@ export interface AddressFormProps extends PropsWithChildren {
   client?: GeoPlacesClient;
   initialMapCenter?: [number, number];
   initialMapZoom?: number;
+  centerBounds?: CenterBounds;
 }
 
 export const AddressFormProvider: FunctionComponent<AddressFormProps> = ({
@@ -31,6 +34,7 @@ export const AddressFormProvider: FunctionComponent<AddressFormProps> = ({
   client,
   initialMapCenter,
   initialMapZoom,
+  centerBounds,
 }) => {
   const [data, setData] = useState<AddressFormData>({});
   const [isAutofill, setIsAutofill] = useState(false);
@@ -65,6 +69,24 @@ export const AddressFormProvider: FunctionComponent<AddressFormProps> = ({
   });
   const [typeaheadApiName, setTypeaheadApiName] = useState<TypeaheadAPIName | null>(null);
 
+  // Stabilize the bounds reference so an inline array literal from the consumer doesn't
+  // change identity on every render — that would rebuild the context object every render
+  // and retrigger context-dependent effects (e.g. AddressFormAddressField's setTypeaheadApiName)
+  // in a loop. Keyed on the serialized values, so it only changes when the bounds change.
+  const centerBoundsKey = centerBounds ? JSON.stringify(centerBounds) : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableCenterBounds = useMemo(() => centerBounds, [centerBoundsKey]);
+
+  // Only the user-adjusted pin can carry an out-of-region coordinate into the submitted
+  // result — the search bias is always clamped and an out-of-region current location is
+  // rejected outright, so originalPosition stays in-region.
+  // Derive the flag from adjustedPosition (not the raw center) so it never false-alarms on a
+  // fresh, unsearched map. Exposed as a primitive so consumers depend on a stable boolean.
+  const isAdjustedPositionOutOfBounds = useMemo(() => {
+    const adjusted = parsePosition(data.adjustedPosition ?? "");
+    return !!adjusted && !isCenterWithinBounds(adjusted, stableCenterBounds);
+  }, [data.adjustedPosition, stableCenterBounds]);
+
   const context = useMemo<AddressFormContextType>(
     () => ({
       apiKey,
@@ -79,6 +101,8 @@ export const AddressFormProvider: FunctionComponent<AddressFormProps> = ({
       showCurrentCountryResultsOnly,
       allowedCountries,
       placeTypes,
+      centerBounds: stableCenterBounds,
+      isAdjustedPositionOutOfBounds,
       isAutofill,
       setIsAutofill,
       typeaheadApiName,
@@ -94,6 +118,8 @@ export const AddressFormProvider: FunctionComponent<AddressFormProps> = ({
       showCurrentCountryResultsOnly,
       allowedCountries,
       placeTypes,
+      stableCenterBounds,
+      isAdjustedPositionOutOfBounds,
       isAutofill,
       typeaheadApiName,
     ],

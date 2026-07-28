@@ -5,6 +5,7 @@ import { Typeahead, TypeaheadOutput } from "../Typeahead";
 import { TypeaheadAPIName } from "../Typeahead/use-typeahead-query";
 import { useAddressFormContext } from "./AddressFormContext";
 import { Field } from "./AddressFormFields";
+import { clampCenterToBounds } from "../../utils/bounds";
 
 export interface AddressFormAddressFieldProps {
   name: Field;
@@ -56,11 +57,17 @@ export const AddressFormAddressField = memo(
           showCurrentLocation={showCurrentLocation}
           apiName={validatedApiName}
           skipNextQuery={context.isAutofill}
+          queryBounds={context.centerBounds}
           apiInput={{
             PoliticalView: context.politicalView,
             Language: context.language,
+            // Clamp the bias into the supported region so search results stay in-region
+            // even when the user has panned the map center outside it.
             BiasPosition: context.mapViewState
-              ? [context.mapViewState.longitude, context.mapViewState.latitude]
+              ? clampCenterToBounds(
+                  [context.mapViewState.longitude, context.mapViewState.latitude],
+                  context.centerBounds,
+                )
               : undefined,
             Filter: {
               IncludePlaceTypes: context.placeTypes,

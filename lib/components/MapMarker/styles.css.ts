@@ -23,3 +23,10 @@ export const adjustmentMessageContainer = style({
   zIndex: 1,
   fontSize: "0.8rem",
 });
+
+// Warning palette (mirrors the Notification component) for when the adjusted pin is dragged
+// outside the supported region.
+export const outOfBoundsMessageContainer = style({
+  backgroundColor: "#fff8e1",
+  borderBottom: "1px solid #ffe082",
+});

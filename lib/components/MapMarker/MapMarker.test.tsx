@@ -17,6 +17,7 @@ vi.mock("react-map-gl/maplibre", () => ({
 vi.mock("./styles.css.ts", () => ({
   pinContainer: "pinContainer",
   adjustmentMessageContainer: "adjustmentMessageContainer",
+  outOfBoundsMessageContainer: "outOfBoundsMessageContainer",
 }));
 
 vi.mock("../AdjustButton", () => ({
@@ -57,6 +58,20 @@ describe("MapMarker", () => {
     render(<MapMarker hasAdjustedPosition={true} onReset={onReset} />);
     await userEvent.click(screen.getByText("Undo adjustment"));
     expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the out-of-region warning and keeps Undo as the recovery action when the pin is out of bounds", () => {
+    render(<MapMarker hasAdjustedPosition={true} isOutOfBounds={true} onReset={vi.fn()} />);
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("This location is outside the supported region");
+    expect(screen.queryByText("Location adjusted")).not.toBeInTheDocument();
+    expect(screen.getByText("Undo adjustment")).toBeInTheDocument();
+  });
+
+  it("does not show the out-of-region warning when the pin is in bounds", () => {
+    render(<MapMarker hasAdjustedPosition={true} isOutOfBounds={false} onReset={vi.fn()} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText("Location adjusted")).toBeInTheDocument();
   });
 
   it("renders dark color scheme pin", () => {
