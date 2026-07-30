@@ -6,6 +6,7 @@ import { renderWithProvider } from "../../test/utils";
 import * as api from "../../utils/api";
 import { AddressFormAddressField } from "./AddressFormAddressField";
 import { AddressFormContext, AddressFormContextType } from "./AddressFormContext";
+import { useNotificationStore } from "../../stores/notificationStore";
 
 // Mock the autocomplete, getPlace, and reverseGeocode functions
 vi.mock("../../utils/api", () => ({
@@ -238,6 +239,49 @@ describe("AddressFormAddressField", () => {
         }),
       );
     });
+  });
+
+  it("warns instead of filling the field when the device is outside centerBounds", async () => {
+    vi.clearAllMocks();
+    useNotificationStore.getState().clearNotifications();
+
+    const mockGeolocation = {
+      getCurrentPosition: vi.fn(),
+      watchPosition: vi.fn(),
+      clearWatch: vi.fn(),
+    };
+    Object.defineProperty(global.navigator, "geolocation", { value: mockGeolocation, configurable: true });
+    // Device far outside the region (Vancouver).
+    mockGeolocation.getCurrentPosition.mockImplementation((success) => {
+      success({ coords: { latitude: 49.2827, longitude: -123.1207 } });
+    });
+
+    const contextValue: AddressFormContextType = {
+      ...mockContextValue,
+      data: {},
+      centerBounds: [
+        [103.6, 1.2],
+        [104.1, 1.5],
+      ],
+    };
+
+    const { getByRole } = renderWithProvider(
+      <AddressFormContext.Provider value={contextValue}>
+        <AddressFormAddressField name="addressLineOne" label="Address" showCurrentLocation={true} apiName="suggest" />
+      </AddressFormContext.Provider>,
+    );
+
+    await userEvent.click(getByRole("button"));
+
+    await waitFor(() => {
+      expect(useNotificationStore.getState().notifications).toEqual([
+        expect.objectContaining({ type: "warning", message: "Your current location is outside the supported region" }),
+      ]);
+    });
+    // No lookup, and nothing written back to the form — the old behavior clamped to the
+    // Singapore box corner and filled the field with an address in another country.
+    expect(api.reverseGeocode).not.toHaveBeenCalled();
+    expect(mockSetData).not.toHaveBeenCalled();
   });
 
   it("updates context with addressDetails when locate button is clicked", async () => {

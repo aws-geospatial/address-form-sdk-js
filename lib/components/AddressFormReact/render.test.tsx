@@ -1,7 +1,27 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, act, waitFor, screen } from "@testing-library/react";
 import { render } from "./render";
+import { useAddressFormContext } from "./AddressFormContext";
 import { useNotificationStore } from "../../stores/notificationStore";
+
+// Replace the real (MapLibre) map with a stub that lets a test drive the shared
+// adjustedPosition — the only input that flips isAdjustedPositionOutOfBounds — the way the
+// real map's pan handler would.
+vi.mock("./AddressFormMap", () => ({
+  AddressFormMap: () => {
+    const { setData } = useAddressFormContext();
+    return (
+      <div data-testid="mock-map">
+        <button type="button" onClick={() => setData({ adjustedPosition: "120,20" })}>
+          seed-out-of-bounds
+        </button>
+        <button type="button" onClick={() => setData({ adjustedPosition: "103.9,1.4" })}>
+          seed-in-bounds
+        </button>
+      </div>
+    );
+  },
+}));
 
 describe("render", () => {
   beforeEach(() => {
@@ -229,6 +249,136 @@ describe("render", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Test notification message")).toBeInTheDocument();
+    });
+  });
+
+  const grabBounds: [[number, number], [number, number]] = [
+    [103.6, 1.2],
+    [104.1, 1.5],
+  ];
+
+  it("disables the submit button when the adjusted pin is dragged outside centerBounds", async () => {
+    document.body.innerHTML = `
+      <form id="address-form">
+        <div data-type="address-form" data-map-style="Standard,Light"></div>
+        <button data-type="address-form" type="submit">Submit</button>
+      </form>
+    `;
+
+    act(() => {
+      render({
+        root: "#address-form",
+        apiKey: "test-key",
+        region: "ap-southeast-1",
+        centerBounds: grabBounds,
+        initialMapCenter: [103.85, 1.35],
+      });
+    });
+
+    // Starts enabled (no adjustment yet), then disables once the pin lands out of region.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "seed-out-of-bounds" }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    });
+  });
+
+  it("keeps the submit button enabled when the adjusted pin stays inside centerBounds", async () => {
+    document.body.innerHTML = `
+      <form id="address-form">
+        <div data-type="address-form" data-map-style="Standard,Light"></div>
+        <button data-type="address-form" type="submit">Submit</button>
+      </form>
+    `;
+
+    act(() => {
+      render({
+        root: "#address-form",
+        apiKey: "test-key",
+        region: "ap-southeast-1",
+        centerBounds: grabBounds,
+        initialMapCenter: [103.85, 1.35],
+      });
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "seed-in-bounds" }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
+    });
+  });
+
+  // The disabled submit button swallows clicks, so these drive the form's submit event directly —
+  // the path Enter-to-submit and requestSubmit() take — to reach the handler's own guard.
+  it("blocks the submit handler when the adjusted pin is outside centerBounds", async () => {
+    document.body.innerHTML = `
+      <form id="address-form">
+        <div data-type="address-form" data-map-style="Standard,Light"></div>
+        <button data-type="address-form" type="submit">Submit</button>
+      </form>
+    `;
+    const onSubmit = vi.fn();
+
+    act(() => {
+      render({
+        root: "#address-form",
+        apiKey: "test-key",
+        region: "ap-southeast-1",
+        centerBounds: grabBounds,
+        initialMapCenter: [103.85, 1.35],
+        onSubmit,
+      });
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "seed-out-of-bounds" }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    });
+
+    fireEvent.submit(document.querySelector("#address-form")!);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("runs the submit handler when the adjusted pin is inside centerBounds", async () => {
+    document.body.innerHTML = `
+      <form id="address-form">
+        <div data-type="address-form" data-map-style="Standard,Light"></div>
+        <button data-type="address-form" type="submit">Submit</button>
+      </form>
+    `;
+    const onSubmit = vi.fn();
+
+    act(() => {
+      render({
+        root: "#address-form",
+        apiKey: "test-key",
+        region: "ap-southeast-1",
+        centerBounds: grabBounds,
+        initialMapCenter: [103.85, 1.35],
+        onSubmit,
+      });
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "seed-in-bounds" }));
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
+    });
+
+    fireEvent.submit(document.querySelector("#address-form")!);
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
     });
   });
 });

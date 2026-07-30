@@ -13,7 +13,7 @@ export const AddressFormMap: FunctionComponent<AddressFormMapProps> = ({
   children,
   ...mapProps
 }) => {
-  const { data, setData, mapViewState, setMapViewState } = useAddressFormContext();
+  const { data, setData, mapViewState, setMapViewState, isAdjustedPositionOutOfBounds } = useAddressFormContext();
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   const originalPosition = parsePosition(data.originalPosition ?? "");
@@ -71,6 +71,7 @@ export const AddressFormMap: FunctionComponent<AddressFormMapProps> = ({
           adjustablePosition={adjustablePosition}
           markerPosition={originalPosition}
           hasAdjustedPosition={hasAdjustedPosition}
+          isOutOfBounds={isAdjustedPositionOutOfBounds}
           onReset={handleReset}
           colorScheme={getColorScheme(mapProps.mapStyle)}
         />

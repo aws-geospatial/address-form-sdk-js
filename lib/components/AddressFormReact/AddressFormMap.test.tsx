@@ -23,6 +23,7 @@ vi.mock("../MapMarker", () => ({
       data-testid="mock-map-marker"
       data-adjustable-position={props.adjustablePosition?.toString()}
       data-has-adjusted-position={props.hasAdjustedPosition?.toString()}
+      data-out-of-bounds={props.isOutOfBounds?.toString()}
     >
       {props.hasAdjustedPosition && (
         <button data-testid="reset-button" onClick={props.onReset}>
@@ -155,5 +156,39 @@ describe("AddressFormMap", () => {
       </AddressFormContext.Provider>,
     );
     expect(screen.getByTestId("mock-map")).toHaveAttribute("data-map-style", "Standard,Dark");
+  });
+
+  const bounds: [[number, number], [number, number]] = [
+    [103.6, 1.2],
+    [104.1, 1.5],
+  ];
+
+  it("tells the marker it is in bounds when the adjusted pin is inside the region", () => {
+    const ctx = createContext({
+      data: { originalPosition: "103.85,1.35", adjustedPosition: "103.9,1.4" },
+      centerBounds: bounds,
+      isAdjustedPositionOutOfBounds: false,
+    });
+    render(
+      <AddressFormContext.Provider value={ctx}>
+        <AddressFormMap mapStyle={["Standard", "Light"]} />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByTestId("mock-map-marker")).toHaveAttribute("data-out-of-bounds", "false");
+  });
+
+  it("tells the marker it is out of bounds when the adjusted pin is outside the region", () => {
+    const ctx = createContext({
+      data: { originalPosition: "103.85,1.35", adjustedPosition: "110,1.35" },
+      mapViewState: { longitude: 110, latitude: 1.35, zoom: 10 },
+      centerBounds: bounds,
+      isAdjustedPositionOutOfBounds: true,
+    });
+    render(
+      <AddressFormContext.Provider value={ctx}>
+        <AddressFormMap mapStyle={["Standard", "Light"]} />
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByTestId("mock-map-marker")).toHaveAttribute("data-out-of-bounds", "true");
   });
 });

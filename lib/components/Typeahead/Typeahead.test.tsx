@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProvider } from "../../test/utils";
 import * as api from "../../utils/api";
 import { Typeahead } from "./index";
+import { queryClient } from "../../utils/query-client";
 import { useState } from "react";
 
 vi.mock("../../utils/api", () => ({
@@ -37,6 +38,9 @@ describe("Typeahead Component", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // The query client is a module-level singleton with a 30-minute staleTime, so results cached
+    // by one test would otherwise be served to the next instead of hitting the mocked API.
+    queryClient.clear();
     vi.mocked(api.getPlace).mockResolvedValue(mockPlaceResult);
   });
 
@@ -563,6 +567,15 @@ describe("Typeahead Component", () => {
   });
 
   it("should invalidate cache when BiasPosition changes", async () => {
+    // `suggest` must resolve: an unmocked vi.fn() returns undefined, getSuggestResults throws on
+    // `response.ResultItems`, and the query then sits in retry backoff. invalidateQueries cannot
+    // start a second fetch while the first is still in flight, so the call count never reaches 2.
+    vi.mocked(api.suggest).mockResolvedValue({
+      ResultItems: [],
+      PricingBucket: "mock-pricing-bucket",
+      $metadata: {},
+    });
+
     const TestComponent = ({ biasPosition }: { biasPosition?: [number, number] }) => {
       const [value, setValue] = useState("");
 

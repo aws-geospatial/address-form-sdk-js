@@ -1,13 +1,16 @@
 import clsx from "clsx";
 import { Marker } from "react-map-gl/maplibre";
 import { AdjustButton } from "../AdjustButton";
-import { pinContainer, adjustmentMessageContainer } from "./styles.css.ts";
+import { pinContainer, adjustmentMessageContainer, outOfBoundsMessageContainer } from "./styles.css.ts";
 import { ColorScheme } from "../Map/index.tsx";
 
 export interface MapMarkerProps {
   adjustablePosition?: boolean;
   markerPosition?: [number, number];
   hasAdjustedPosition?: boolean;
+  // The adjusted pin has been dragged outside the supported region. The adjustment bar turns
+  // into a warning and Undo becomes the recovery action (it recenters the pin in-region).
+  isOutOfBounds?: boolean;
   onReset?: () => void;
   colorScheme?: ColorScheme;
 }
@@ -16,6 +19,7 @@ export function MapMarker({
   adjustablePosition = true,
   markerPosition,
   hasAdjustedPosition = false,
+  isOutOfBounds = false,
   onReset,
   colorScheme,
 }: MapMarkerProps) {
@@ -32,10 +36,19 @@ export function MapMarker({
     );
   }
 
+  const message = isOutOfBounds
+    ? "This location is outside the supported region"
+    : hasAdjustedPosition
+      ? "Location adjusted"
+      : "Move the map to adjust pin location";
+
   return (
     <>
-      <div className={clsx(adjustmentMessageContainer, "aws-map-adjustment")}>
-        <span>{hasAdjustedPosition ? "Location adjusted" : "Move the map to adjust pin location"}</span>
+      <div
+        className={clsx(adjustmentMessageContainer, isOutOfBounds && outOfBoundsMessageContainer, "aws-map-adjustment")}
+        role={isOutOfBounds ? "alert" : undefined}
+      >
+        <span>{message}</span>
         {hasAdjustedPosition && <AdjustButton onClick={onReset}>Undo adjustment</AdjustButton>}
       </div>
 

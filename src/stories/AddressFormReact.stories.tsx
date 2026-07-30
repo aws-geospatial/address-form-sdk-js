@@ -344,83 +344,111 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: (args: any) => {
-    return (
-      <AddressForm
-        apiKey={args.apiKey === "AMAZON_LOCATION_API_KEY" ? import.meta.env.STORYBOOK_SDK_API_KEY : args.apiKey}
-        region={args.region}
-        onSubmit={args.onSubmit}
-        language={args.language}
-        politicalView={args.politicalView}
-        showCurrentCountryResultsOnly={args.showCurrentCountryResultsOnly}
-        allowedCountries={args.allowedCountries}
-        placeTypes={args.placeTypes}
-        initialMapCenter={[-123.113, 49.259]} // Vancouver, BC
-        initialMapZoom={10}
-      >
-        <Flex direction="row" flex>
-          <Flex direction="column">
-            <input
-              data-type="address-form"
-              name="addressLineOne"
-              aria-label={args.addressLineOneLabel}
-              placeholder={args.addressLineOnePlaceholder}
-              data-api-name={args.addressLineOneApiName}
-              data-show-current-location={args.addressLineOneShowCurrentLocation}
-              className={args.addressLineOneClassName}
-            />
-            <input
-              data-type="address-form"
-              name="addressLineTwo"
-              aria-label={args.addressLineTwoLabel}
-              placeholder={args.addressLineTwoPlaceholder}
-              className={args.addressLineTwoClassName}
-            />
-            <input
-              data-type="address-form"
-              name="city"
-              aria-label={args.cityLabel}
-              placeholder={args.cityPlaceholder}
-              className={args.cityClassName}
-            />
-            <input
-              data-type="address-form"
-              name="province"
-              aria-label={args.provinceLabel}
-              placeholder={args.provincePlaceholder}
-              className={args.provinceClassName}
-            />
-            <input
-              data-type="address-form"
-              name="postalCode"
-              aria-label={args.postalCodeLabel}
-              placeholder={args.postalCodePlaceholder}
-              className={args.postalCodeClassName}
-            />
-            <input
-              data-type="address-form"
-              name="country"
-              aria-label={args.countryLabel}
-              placeholder={args.countryPlaceholder}
-              className={args.countryClassName}
-            />
-            <Flex direction="row">
-              <button data-type="address-form" type="submit">
-                Submit
-              </button>
-              <button data-type="address-form" type="reset">
-                Reset
-              </button>
-            </Flex>
-          </Flex>
-          <AddressForm.Map
-            mapStyle={args.mapMapStyle}
-            showNavigationControl={args.mapShowNavigationControl}
-            adjustablePosition={args.mapAdjustablePosition}
-          />
+const renderAddressForm = (
+  args: any,
+  overrides: {
+    initialMapCenter?: [number, number];
+    initialMapZoom?: number;
+    centerBounds?: [[number, number], [number, number]];
+  } = {},
+) => (
+  <AddressForm
+    apiKey={args.apiKey === "AMAZON_LOCATION_API_KEY" ? import.meta.env.STORYBOOK_SDK_API_KEY : args.apiKey}
+    region={args.region}
+    onSubmit={args.onSubmit}
+    language={args.language}
+    politicalView={args.politicalView}
+    showCurrentCountryResultsOnly={args.showCurrentCountryResultsOnly}
+    allowedCountries={args.allowedCountries}
+    placeTypes={args.placeTypes}
+    initialMapCenter={overrides.initialMapCenter ?? [-123.113, 49.259]} // Vancouver, BC
+    initialMapZoom={overrides.initialMapZoom ?? 10}
+    centerBounds={overrides.centerBounds}
+  >
+    <Flex direction="row" flex>
+      <Flex direction="column">
+        <input
+          data-type="address-form"
+          name="addressLineOne"
+          aria-label={args.addressLineOneLabel}
+          placeholder={args.addressLineOnePlaceholder}
+          data-api-name={args.addressLineOneApiName}
+          data-show-current-location={args.addressLineOneShowCurrentLocation}
+          className={args.addressLineOneClassName}
+        />
+        <input
+          data-type="address-form"
+          name="addressLineTwo"
+          aria-label={args.addressLineTwoLabel}
+          placeholder={args.addressLineTwoPlaceholder}
+          className={args.addressLineTwoClassName}
+        />
+        <input
+          data-type="address-form"
+          name="city"
+          aria-label={args.cityLabel}
+          placeholder={args.cityPlaceholder}
+          className={args.cityClassName}
+        />
+        <input
+          data-type="address-form"
+          name="province"
+          aria-label={args.provinceLabel}
+          placeholder={args.provincePlaceholder}
+          className={args.provinceClassName}
+        />
+        <input
+          data-type="address-form"
+          name="postalCode"
+          aria-label={args.postalCodeLabel}
+          placeholder={args.postalCodePlaceholder}
+          className={args.postalCodeClassName}
+        />
+        <input
+          data-type="address-form"
+          name="country"
+          aria-label={args.countryLabel}
+          placeholder={args.countryPlaceholder}
+          className={args.countryClassName}
+        />
+        <Flex direction="row">
+          <button data-type="address-form" type="submit">
+            Submit
+          </button>
+          <button data-type="address-form" type="reset">
+            Reset
+          </button>
         </Flex>
-      </AddressForm>
-    );
-  },
+      </Flex>
+      <AddressForm.Map
+        mapStyle={args.mapMapStyle}
+        showNavigationControl={args.mapShowNavigationControl}
+        adjustablePosition={args.mapAdjustablePosition}
+      />
+    </Flex>
+  </AddressForm>
+);
+
+export const Default: Story = {
+  render: (args: any) => renderAddressForm(args),
+};
+
+// Restricts the adjustable pin to the Singapore/Grab-supported box. Select an address, then
+// drag the pin out of the box: the adjustment bar turns into an out-of-region warning and
+// Submit is blocked until you Undo. Search stays in-region regardless of where you pan.
+//
+// To exercise the current-location button, override the browser's geolocation: DevTools →
+// ⋮ → More tools → Sensors → Location → Other, then reload. Outside the box (Vancouver,
+// lat 49.2827 / lng -123.1207) warns and leaves the field empty; inside it (lat 1.3521 /
+// lng 103.8198) fills the field from the real device coordinate.
+export const BoundedRegion: Story = {
+  render: (args: any) =>
+    renderAddressForm(args, {
+      initialMapCenter: [103.82, 1.35], // Singapore
+      initialMapZoom: 11,
+      centerBounds: [
+        [103.6, 1.2],
+        [104.1, 1.5],
+      ],
+    }),
 };

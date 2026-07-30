@@ -11,6 +11,7 @@ import { LocateButton } from "../LocateButton";
 import { base, brandOption, brandOptionLink, currentLocation, info, input, option, options } from "./styles.css.ts";
 import { TypeaheadAPIInput, TypeaheadAPIName, TypeaheadResultItem, useTypeaheadQuery } from "./use-typeahead-query.ts";
 import { countries } from "../../data/countries.ts";
+import type { CenterBounds } from "../../utils/bounds.ts";
 
 export interface TypeaheadOutput {
   placeId?: string;
@@ -33,6 +34,9 @@ export interface TypeaheadProps {
   showCurrentLocation?: boolean;
   debounce?: number;
   skipNextQuery?: boolean;
+  // Optional supported-region box; forwarded to the current-location button, which warns
+  // instead of looking up a device outside it.
+  queryBounds?: CenterBounds;
 }
 
 export const Typeahead = ({ apiName, ...props }: TypeaheadProps) => {
@@ -52,6 +56,7 @@ const APITypeahead = ({
   showCurrentLocation = true,
   debounce = 300,
   skipNextQuery,
+  queryBounds,
 }: TypeaheadProps & { apiName: TypeaheadAPIName }) => {
   const debouncedValue = useDebounce(value, debounce);
   const { client } = useAmazonLocationContext();
@@ -212,7 +217,9 @@ const APITypeahead = ({
         )}
       </Combobox>
 
-      {showCurrentLocation && <LocateButton onLocate={handleCurrentLocation} className={currentLocation} />}
+      {showCurrentLocation && (
+        <LocateButton onLocate={handleCurrentLocation} className={currentLocation} queryBounds={queryBounds} />
+      )}
     </div>
   );
 };
@@ -226,6 +233,7 @@ const InputTypeahead = ({
   onChange,
   onSelect,
   showCurrentLocation = true,
+  queryBounds,
 }: TypeaheadProps) => {
   const handleCurrentLocation = (address: TypeaheadOutput) => {
     onChange(address.addressLineOneField ?? "");
@@ -244,7 +252,9 @@ const InputTypeahead = ({
         autoComplete="off"
       />
 
-      {showCurrentLocation && <LocateButton onLocate={handleCurrentLocation} className={currentLocation} />}
+      {showCurrentLocation && (
+        <LocateButton onLocate={handleCurrentLocation} className={currentLocation} queryBounds={queryBounds} />
+      )}
     </div>
   );
 };

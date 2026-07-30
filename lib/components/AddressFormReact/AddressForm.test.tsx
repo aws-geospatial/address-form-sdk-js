@@ -214,4 +214,125 @@ describe("AddressForm", () => {
       expect(screen.getByText("Test notification message")).toBeInTheDocument();
     });
   });
+
+  const grabBounds: [[number, number], [number, number]] = [
+    [103.6, 1.2],
+    [104.1, 1.5],
+  ];
+
+  // Seeds an adjustedPosition (as if the user dragged the pin) so the submit-guard tests can
+  // drive isAdjustedPositionOutOfBounds without a live map.
+  const AdjustedPositionSeeder = ({ position }: { position: string }) => {
+    const { setData } = useAddressFormContext();
+    useEffect(() => {
+      setData({ adjustedPosition: position });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return null;
+  };
+
+  it("blocks submit when the adjusted pin is outside centerBounds", async () => {
+    const mockOnSubmit = vi.fn();
+    const { getByRole } = renderWithProvider(
+      <AddressForm
+        apiKey="test"
+        region="ap-southeast-1"
+        onSubmit={mockOnSubmit}
+        centerBounds={grabBounds}
+        initialMapCenter={[103.85, 1.35]}
+      >
+        <AdjustedPositionSeeder position="120,20" />
+        <button data-type="address-form" type="submit">
+          Submit
+        </button>
+      </AddressForm>,
+    );
+
+    const button = getByRole("button", { name: "Submit" });
+    await waitFor(() => expect(button).toBeDisabled());
+
+    // Dispatch on the form rather than clicking: the disabled button already swallows the click,
+    // so a click alone would pass even with the handler's guard removed. Enter-to-submit and
+    // programmatic requestSubmit() reach the handler directly, and this is that path.
+    fireEvent.submit(button.closest("form")!);
+
+    // Give any async submit a chance to run, then assert it never fired.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+  });
+
+  it("allows submit when the adjusted pin is inside centerBounds", async () => {
+    const mockOnSubmit = vi.fn();
+    const { getByRole } = renderWithProvider(
+      <AddressForm
+        apiKey="test"
+        region="ap-southeast-1"
+        onSubmit={mockOnSubmit}
+        centerBounds={grabBounds}
+        initialMapCenter={[103.85, 1.35]}
+      >
+        <AdjustedPositionSeeder position="103.9,1.4" />
+        <button data-type="address-form" type="submit">
+          Submit
+        </button>
+      </AddressForm>,
+    );
+
+    fireEvent.click(getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalled();
+    });
+  });
+
+  it("allows submit when there is no adjusted pin even if the initial center is out of region", async () => {
+    const mockOnSubmit = vi.fn();
+    const { getByRole } = renderWithProvider(
+      <AddressForm
+        apiKey="test"
+        region="ap-southeast-1"
+        onSubmit={mockOnSubmit}
+        centerBounds={grabBounds}
+        initialMapCenter={[120, 20]}
+      >
+        <button data-type="address-form" type="submit">
+          Submit
+        </button>
+      </AddressForm>,
+    );
+
+    fireEvent.click(getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalled();
+    });
+  });
+
+  it("disables the composable submit button when the adjusted pin is outside centerBounds", async () => {
+    const { getByRole } = renderWithProvider(
+      <AddressForm apiKey="test" region="ap-southeast-1" centerBounds={grabBounds} initialMapCenter={[103.85, 1.35]}>
+        <AdjustedPositionSeeder position="120,20" />
+        <button data-type="address-form" type="submit">
+          Submit
+        </button>
+      </AddressForm>,
+    );
+
+    await waitFor(() => {
+      expect(getByRole("button", { name: "Submit" })).toBeDisabled();
+    });
+  });
+
+  it("keeps the composable submit button enabled when the adjusted pin is inside centerBounds", () => {
+    const { getByRole } = renderWithProvider(
+      <AddressForm apiKey="test" region="ap-southeast-1" centerBounds={grabBounds} initialMapCenter={[103.85, 1.35]}>
+        <AdjustedPositionSeeder position="103.9,1.4" />
+        <button data-type="address-form" type="submit">
+          Submit
+        </button>
+      </AddressForm>,
+    );
+
+    expect(getByRole("button", { name: "Submit" })).toBeEnabled();
+  });
 });

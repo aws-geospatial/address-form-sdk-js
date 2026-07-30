@@ -18,6 +18,7 @@ import * as styles from "./styles.css";
 import useAmazonLocationContext from "../../hooks/use-amazon-location-context";
 import { getPlace } from "../../utils/api";
 import { NotificationContainer } from "../Notification";
+import type { CenterBounds } from "../../utils/bounds";
 
 export interface AddressFormData {
   placeId?: string;
@@ -43,6 +44,7 @@ export interface AddressFormProps extends AddressFormContentProps {
   placeTypes?: AutocompleteFilterPlaceType[];
   initialMapCenter?: [number, number];
   initialMapZoom?: number;
+  centerBounds?: CenterBounds;
 }
 
 interface ChildComponents {
@@ -64,6 +66,7 @@ export const AddressForm: FunctionComponent<AddressFormProps> & ChildComponents 
   placeTypes,
   initialMapCenter,
   initialMapZoom,
+  centerBounds,
   ...contentProps
 }) => {
   return (
@@ -78,6 +81,7 @@ export const AddressForm: FunctionComponent<AddressFormProps> & ChildComponents 
       placeTypes={placeTypes}
       initialMapCenter={initialMapCenter}
       initialMapZoom={initialMapZoom}
+      centerBounds={centerBounds}
     >
       <AddressFormContent {...contentProps}>{children}</AddressFormContent>
     </AddressFormProvider>
@@ -95,7 +99,7 @@ interface AddressFormContentProps extends Omit<ComponentProps<"form">, "onSubmit
 }
 
 const AddressFormContent: FunctionComponent<AddressFormContentProps> = ({ children, className, onSubmit, ...rest }) => {
-  const { data, resetData } = useAddressFormContext();
+  const { data, resetData, isAdjustedPositionOutOfBounds } = useAddressFormContext();
   const { client } = useAmazonLocationContext();
   const formRef = useRef<HTMLFormElement>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -106,6 +110,10 @@ const AddressFormContent: FunctionComponent<AddressFormContentProps> = ({ childr
 
   const handleSubmit: FormEventHandler = (event) => {
     event.preventDefault();
+
+    // Block submission while the user-adjusted pin is outside the supported region so the form
+    // never returns an out-of-region position. The adjustment bar's Undo recenters the pin.
+    if (isAdjustedPositionOutOfBounds) return;
 
     onSubmit?.(async ({ intendedUse }) => {
       // If the user is going to store the results (even for caching purposes),
