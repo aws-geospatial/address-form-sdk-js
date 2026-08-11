@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.0]
+
+- Add `centerBounds` prop to constrain addresses within a supported region
+
 ## [1.5.0]
 
 - Replace draggable marker with center-fixed map panning UX
