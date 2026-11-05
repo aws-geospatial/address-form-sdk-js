@@ -3,6 +3,7 @@
 ## [2.0.0]
 
 - Upgraded `maplibre-gl` from 5.x to 6.x (`^6.8.0`) to fix CVE-2026-85061 / GHSA-jrc7-96c5-q579, a critical XSS sanitizer bypass in MapLibre's `DOM.sanitize()`
+- Added the MapLibre worker files required by the standalone CDN bundle
 - Breaking: MapLibre GL JS 6 requires WebGL2 (WebGL1 support was removed) and is published as ESM only, targeting ES2022
 - Breaking: `Map` props extend react-map-gl's MapLibre props, so their TypeScript types now come from MapLibre 6; apps that also depend on `maplibre-gl` directly should upgrade to 6.x
 - Updated development and build dependencies (`vitest`, `@vitest/coverage-v8`, `storybook`, `vite`, and transitive tooling packages), including fixes for Dependabot security alerts
