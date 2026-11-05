@@ -1,11 +1,33 @@
-import { defineConfig } from "vite";
-import { resolve } from "path";
+import fs from "node:fs";
+import { builtinModules, createRequire } from "node:module";
+import path, { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
-import { builtinModules } from "node:module";
+import { defineConfig, type Plugin } from "vite";
+
+const require = createRequire(import.meta.url);
+const maplibreWorkerFiles = ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"];
+
+function maplibreWorkerAssets(): Plugin {
+  return {
+    name: "maplibre-worker-assets",
+    generateBundle() {
+      const maplibreDist = path.dirname(require.resolve("maplibre-gl/dist/maplibre-gl.mjs"));
+
+      for (const fileName of maplibreWorkerFiles) {
+        const source = fs.readFileSync(path.join(maplibreDist, fileName), "utf8");
+        this.emitFile({
+          type: "asset",
+          fileName,
+          source: source.replace(/\n\/\/# sourceMappingURL=.*\n?$/, "\n"),
+        });
+      }
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react(), vanillaExtractPlugin()],
+  plugins: [react(), vanillaExtractPlugin(), maplibreWorkerAssets()],
 
   build: {
     outDir: "dist/standalone",
