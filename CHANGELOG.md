@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1]
+
+- Upgraded `maplibre-gl` from 5.x to 6.x (`^6.8.0`) to fix CVE-2026-85061 / GHSA-jrc7-96c5-q579, a critical XSS sanitizer bypass in MapLibre's `DOM.sanitize()`
+- Added the MapLibre worker files required by the standalone CDN bundle
+- MapLibre GL JS 6 requires WebGL2, is published as ESM only, and targets ES2022
+- `Map` props now expose MapLibre 6 types; applications that depend directly on `maplibre-gl` should upgrade to 6.x
+- Updated development and build dependencies, including fixes for Dependabot security alerts
+
 ## [1.6.0]
 
 - Add `centerBounds` prop to constrain addresses within a supported region
